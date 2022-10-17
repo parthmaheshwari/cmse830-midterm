@@ -6,6 +6,7 @@ import plotly.express as px
 
 data = pd.read_csv("african_crises.csv")
 data = data[["exch_usd", "inflation_annual_cpi", "year", "systemic_crisis"]]
+data = data[data["inflation_annual_cpi"]>0]
 df = data.drop('systemic_crisis', axis=1)
 df_norm = (df-df.min())/(df.max()-df.min())
 df_norm = pd.concat((df_norm, data.systemic_crisis), 1)
