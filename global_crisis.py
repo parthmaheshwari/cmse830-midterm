@@ -25,14 +25,14 @@ st.write("""
 How different macroeconomics factor can help us predict systemic crisis in different countries. 
 Shown below: Africa 
 """)
-fig = px.scatter_3d(data, x = 'exch_usd', 
-                    y = 'inflation_annual_cpi', 
-                    z = 'year',
-                    color = 'country',
-                    size_max = 20, 
-                    opacity = 0.5)
+# fig = px.scatter_3d(data, x = 'exch_usd', 
+#                     y = 'inflation_annual_cpi', 
+#                     z = 'year',
+#                     color = 'country',
+#                     size_max = 20, 
+#                     opacity = 0.5)
 
-st.plotly_chart(fig, use_container_width=True)
+# st.plotly_chart(fig, use_container_width=True)
 
 
 country = st.selectbox("Select a column for distribution plot: ",countries)
