@@ -4,6 +4,8 @@ import pandas as pd
 import seaborn as sns
 import plotly.express as px
 import altair as alt
+import matplotlib.pyplot as plt
+
 
 df = pd.read_csv("african_crises.csv")
 
@@ -37,3 +39,5 @@ country = st.selectbox("Select a column for distribution plot: ",countries)
 alt.Chart(df[df["country"]==country]).mark_line().encode(
     x = 'year',
     y='inflation_annual_cpi').interactive()
+
+st.pyplot(plt)
