@@ -36,9 +36,9 @@ Shown below: Africa
 
 
 country = st.selectbox("Select a column for distribution plot: ",countries)
-alt.Chart(df[df["country"]==country]).mark_line().encode(
+c = alt.Chart(df[df["country"]==country]).mark_line().encode(
     x = 'year',
     y='inflation_annual_cpi'
     ).interactive()
 
-st.pyplot(plt)
+st.altair_chart(c, use_container_width=True)
