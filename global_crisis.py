@@ -3,13 +3,20 @@ import seaborn as sns
 import pandas as pd
 import seaborn as sns
 import plotly.express as px
+import altair as alt
 
-data = pd.read_csv("african_crises.csv")
-data = data[["exch_usd", "inflation_annual_cpi", "year", "systemic_crisis","gdp_weighted_default","country"]]
+df = pd.read_csv("african_crises.csv")
+
+#Preprocessing
+data = df[["exch_usd", "inflation_annual_cpi", "year", "systemic_crisis","gdp_weighted_default","country"]]
 data = data[(data["inflation_annual_cpi"]<100)]
 # df = data.drop('systemic_crisis', axis=1)
 # df_norm = (df-df.min())/(df.max()-df.min())
 # df_norm = pd.concat((df_norm, data.systemic_crisis), 1)
+df["banking_crisis"][df["banking_crisis"]=="crisis"] = 1
+df["banking_crisis"][df["banking_crisis"]=="no_crisis"] = 0
+df["banking_crisis"] = pd.to_numeric(df["banking_crisis"])
+df["year"] = pd.to_datetime(df.year, format='%Y')
 
 st.write("""
 # Global Crises Data by Country
@@ -24,3 +31,9 @@ fig = px.scatter_3d(data, x = 'exch_usd',
                     opacity = 0.5)
 
 st.plotly_chart(fig, use_container_width=True)
+
+
+country = st.selectbox("Select a column for distribution plot: ",cols)
+alt.Chart(df[df["country"]==country]).mark_line().encode(
+    x = 'year',
+    y='inflation_annual_cpi').interactive()
