@@ -17,7 +17,7 @@ df["banking_crisis"][df["banking_crisis"]=="crisis"] = 1
 df["banking_crisis"][df["banking_crisis"]=="no_crisis"] = 0
 df["banking_crisis"] = pd.to_numeric(df["banking_crisis"])
 df["year"] = pd.to_datetime(df.year, format='%Y')
-
+countries = list(df["country"].unique())
 st.write("""
 # Global Crises Data by Country
 How different macroeconomics factor can help us predict systemic crisis in different countries. 
@@ -33,7 +33,7 @@ fig = px.scatter_3d(data, x = 'exch_usd',
 st.plotly_chart(fig, use_container_width=True)
 
 
-country = st.selectbox("Select a column for distribution plot: ",cols)
+country = st.selectbox("Select a column for distribution plot: ",countries)
 alt.Chart(df[df["country"]==country]).mark_line().encode(
     x = 'year',
     y='inflation_annual_cpi').interactive()
