@@ -120,7 +120,7 @@ st.altair_chart(c, use_container_width=True)
 
 values = st.slider(
     'Select a range of years',
-    1870, 2013 (1870, 2013))
+    1870, 2013, (1870, 2013))
 
 selector = alt.selection_single(encodings=['x', 'color'])
 df_y = df[(df["year"]>values[0])&(df["year"]<values[-1])]
