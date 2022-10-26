@@ -123,7 +123,7 @@ values = st.slider(
     1870, 2013, (1870, 2013))
 
 selector = alt.selection_single(encodings=['x', 'color'])
-df_y = df[(df["year"]>=f"01-01-values[0]")&(df["year"]<=f"01-01-values[-1]")]
+df_y = df[(df["year"]>=f"01-01-{values[0]}")&(df["year"]<=f"01-01-{values[-1]}")]
 c2 = alt.Chart(df_y).transform_fold(
   ['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis'],
   as_=['column', 'value']
