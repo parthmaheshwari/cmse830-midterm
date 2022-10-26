@@ -5,6 +5,16 @@ import seaborn as sns
 import plotly.express as px
 import altair as alt
 import matplotlib.pyplot as plt
+from vega_datasets import data
+from iso3166 import countries
+
+
+def f(x):
+    try:
+        return countries.get(x).numeric
+    except:
+        return None
+
 
 
 df = pd.read_csv("african_crises.csv")
@@ -18,14 +28,15 @@ df = pd.read_csv("african_crises.csv")
 df["banking_crisis"][df["banking_crisis"]=="crisis"] = 1
 df["banking_crisis"][df["banking_crisis"]=="no_crisis"] = 0
 df["banking_crisis"] = pd.to_numeric(df["banking_crisis"])
+df = df[df["currency_crises"]<=1]
 df["year"] = pd.to_datetime(df.year, format='%Y')
 backup_df = df
 
-countries = list(df["country"].unique())
+countries_list = list(df["country"].unique())
 st.write("""
 # Global Crises Data by Country
 How different macroeconomics factor can help us predict systemic crisis in different countries. 
-Shown below: Africa 
+Shown below: Countries in Africa 
 """)
 # fig = px.scatter_3d(data, x = 'exch_usd', 
 #                     y = 'inflation_annual_cpi', 
@@ -35,8 +46,8 @@ Shown below: Africa
 #                     opacity = 0.5)
 
 # st.plotly_chart(fig, use_container_width=True)
-
-country = st.selectbox("Select a column for distribution plot: ",countries)
+st.header("Varying trends across time and countries -")
+country = st.selectbox("Select a country: ",countries_list)
 
 # c = alt.Chart(df[df["country"]==country]).mark_line().encode(
 #     x = 'year',
@@ -65,6 +76,7 @@ if agree:
     df["sovereign_external_debt_default"]*=sf
     df["domestic_debt_in_default"]*=sf
 
+
 ###
 # Multi-Line chart 
 ###
@@ -84,6 +96,11 @@ line = alt.Chart(source).mark_line(interpolate='basis').encode(
     x='year:T',
     y='y:Q',
     color='category:N',
+    strokeDash=alt.condition(
+        (alt.datum.category == 'exch_usd') | (alt.datum.category == 'domestic_debt_in_default') | (alt.datum.category == 'sovereign_external_debt_default') | (alt.datum.category == 'gdp_weighted_default') | (alt.datum.category == 'inflation_annual_cpi') | (alt.datum.category == 'independence'),
+        alt.value([5, 5]),  # dashed line: 5 pixels  dash + 5 pixels space
+        alt.value([0]),  # solid line
+    )
 )
 
 # Transparent selectors across the chart. This is what tells us
@@ -121,9 +138,12 @@ c = alt.layer(
 
 st.altair_chart(c, use_container_width=True)
 
+st.header("Which countries are more vulnerable to crises")
+
 values = st.slider(
     'Select a range of years',
     1870, 2013, (1870, 2013))
+
 
 selector = alt.selection_single(encodings=['x', 'color'])
 df_y = df[(df["year"]>=f"01-01-{values[0]}")&(df["year"]<=f"01-01-{values[-1]}")]
@@ -139,6 +159,8 @@ c2 = alt.Chart(df_y).transform_fold(
 ).interactive()
 
 st.altair_chart(c2, use_container_width=True)
+
+st.header("What causes a crisis?")
 
 crisis = st.radio(
     "Select the type of crises to analyse",
@@ -168,12 +190,12 @@ c4 = alt.Chart(country_df.reset_index()).mark_circle(size=60).encode(
 hc = alt.hconcat(c3, c4)
 st.altair_chart(hc, use_container_width=True)
 
-
+st.header("Does defaulting on a debt cause a crisis?")
 debt = st.select_slider(
     'Select the type of debt in DEFAULT:',
     options=['No Debt', 'Domestic Debt', 'International Debt', 'International + Domestic Debt'])
 
-
+df = backup_df
 df["no_crises"] = (df["inflation_crises"]==0)&(df["currency_crises"]==0)&(df["systemic_crisis"]==0)&(df["banking_crisis"]==0)
 df["no_crises"] = df["no_crises"].astype(int)
 
@@ -187,7 +209,7 @@ else:
     crisis_df = df[(df["domestic_debt_in_default"]==1)&(df["sovereign_external_debt_default"]==1)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
     
 
-crisis_df = crisis_df.melt('year', var_name='category', value_name='y')
+crisis_df = crisis_df.reset_index().melt('year', var_name='category', value_name='y')
 count_df = pd.DataFrame(crisis_df[crisis_df["y"]==1]["category"].value_counts()).reset_index()
 c5 = alt.Chart(count_df).mark_arc().encode(
     theta=alt.Theta(field="category", type="quantitative"),
@@ -196,10 +218,12 @@ c5 = alt.Chart(count_df).mark_arc().encode(
 
 st.altair_chart(c5, use_container_width=True)
 
-crisis_df = df[df["country"]==country][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis','year']]
-crisis_df = crisis_df.melt('year', var_name='category', value_name='y')
-crisis_df = crisis_df[crisis_df["y"]==1]
-c6 =  alt.Chart(crisis_df, width=40).mark_circle(size=60).encode(
+st.header("Can one crisis cause another?")
+
+crisis_df1 = df[df["country"]==country][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis','year']]
+crisis_df1 = crisis_df1.melt('year', var_name='category', value_name='y')
+crisis_df1 = crisis_df1[crisis_df1["y"]==1]
+c6 =  alt.Chart(crisis_df1, width=40).mark_circle(size=60).encode(
 x=alt.X(
     'jitter:Q',
     title=None,
@@ -231,3 +255,21 @@ column=alt.Column(
 ).interactive()
 
 st.altair_chart(c6)
+
+# year1 = st.slider('Select the year - ', 1870, 2013, 2000)
+
+# df["country_code"] = df["country"].apply(f)
+# countries1 = alt.topo_feature(data.world_110m.url,"countries")
+# c7 = alt.Chart(countries1).mark_geoshape().encode(
+#     color=f'{crisis}:Q'
+# ).transform_lookup(
+#     lookup='id',
+#     from_=alt.LookupData(df[df["year"]==year1], 'country_code', [crisis])
+# ).project(
+#     type='naturalEarth1'
+# ).properties(
+#     width=500,
+#     height=300
+# )
+# st.altair_chart(c7, use_container_width=True)
+
