@@ -118,9 +118,13 @@ c = alt.layer(
 
 st.altair_chart(c, use_container_width=True)
 
-selector = alt.selection_single(encodings=['x', 'color'])
+values = st.slider(
+    'Select a range of years',
+    1870, 2013 (1870, 2013))
 
-c2 = alt.Chart(df).transform_fold(
+selector = alt.selection_single(encodings=['x', 'color'])
+df_y = df[(df["year"]>values[0])&(df["year"]<values[-1])]
+c2 = alt.Chart(df_y).transform_fold(
   ['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis'],
   as_=['column', 'value']
 ).mark_bar().encode(
