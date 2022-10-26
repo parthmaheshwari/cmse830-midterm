@@ -44,6 +44,15 @@ country = st.selectbox("Select a column for distribution plot: ",countries)
 
 # st.altair_chart(c, use_container_width=True)
 
+crisis_options = st.multiselect(
+    'Types of crises:',
+    ['banking_crisis', 'systemic_crisis', 'inflation_crises','currency_crises'])
+
+st.write('You selected:', options)
+
+eco_ops = st.multiselect(
+    'Macroeconomic parameters:',
+    ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'gdp_weighted_default', 'inflation_annual_cpi', 'independence'])
 
 
 ###
@@ -52,6 +61,8 @@ country = st.selectbox("Select a column for distribution plot: ",countries)
 country_df = df[df["country"]==country]
 country_df.set_index("year", inplace=True)
 source = country_df.drop(columns=["country","cc3","case"])
+column_list = [i for i in list(country_df) if i not in []]
+source = source[crisis_options+eco_ops]
 source = source.reset_index().melt('year', var_name='category', value_name='y')
 
 # Create a selection that chooses the nearest point & selects based on x-value
@@ -96,6 +107,6 @@ c = alt.layer(
     line, selectors, points, rules, text
 ).properties(
     width=600, height=300
-)
+).interactive()
 
 st.altair_chart(c, use_container_width=True)
