@@ -53,6 +53,7 @@ eco_ops = st.multiselect(
     ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'gdp_weighted_default', 'inflation_annual_cpi', 'independence'])
 
 agree = st.checkbox('Scaling enabled')
+number = st.number_input('Select scaling factor', min_value=1, max_value=100, value = 1)
 
 if agree:
     df["banking_crisis"]*=10
