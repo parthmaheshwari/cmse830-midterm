@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 df = pd.read_csv("african_crises.csv")
 
 #Preprocessing
-data = df[["exch_usd", "inflation_annual_cpi", "year", "systemic_crisis","gdp_weighted_default","country"]]
-data = data[(data["inflation_annual_cpi"]<100)]
+# data = df[["exch_usd", "inflation_annual_cpi", "year", "systemic_crisis","gdp_weighted_default","country"]]
+# data = data[(data["inflation_annual_cpi"]<100)]
 # df = data.drop('systemic_crisis', axis=1)
 # df_norm = (df-df.min())/(df.max()-df.min())
 # df_norm = pd.concat((df_norm, data.systemic_crisis), 1)
@@ -43,6 +43,8 @@ country = st.selectbox("Select a column for distribution plot: ",countries)
 #     ).interactive()
 
 # st.altair_chart(c, use_container_width=True)
+
+
 
 ###
 # Multi-Line chart 
@@ -94,6 +96,6 @@ c = alt.layer(
     line, selectors, points, rules, text
 ).properties(
     width=600, height=300
-).interactive()
+)
 
 st.altair_chart(c, use_container_width=True)
