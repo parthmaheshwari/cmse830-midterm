@@ -47,8 +47,6 @@ country = st.selectbox("Select a column for distribution plot: ",countries)
 ###
 # Multi-Line chart 
 ###
-import numpy as np
-df["year"] = pd.to_datetime(df.year, format='%Y')
 country_df = df[df["country"]==country]
 country_df.set_index("year", inplace=True)
 source = country_df.drop(columns=["country","cc3","case"])
@@ -93,9 +91,10 @@ rules = alt.Chart(source).mark_rule(color='gray').encode(
 )
 
 # Put the five layers into a chart and bind the data
-alt.layer(
+c = alt.layer(
     line, selectors, points, rules, text
 ).properties(
     width=600, height=300
 ).interactive()
 
+st.altair_chart(c, use_container_width=True)
