@@ -128,8 +128,8 @@ c2 = alt.Chart(df_y).transform_fold(
   ['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis'],
   as_=['column', 'value']
 ).mark_bar().encode(
-  x='country:N',
-  y='sum(value):Q',
+  x=alt.X('country:N', title="Countries"),
+  y=alt.Y('sum(value):Q', title="Total no. of crises"),
   color=alt.condition(selector, 'column:N', alt.value('lightgray'))
 ).add_selection(
     selector
