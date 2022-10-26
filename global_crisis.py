@@ -19,6 +19,7 @@ df["banking_crisis"][df["banking_crisis"]=="crisis"] = 1
 df["banking_crisis"][df["banking_crisis"]=="no_crisis"] = 0
 df["banking_crisis"] = pd.to_numeric(df["banking_crisis"])
 df["year"] = pd.to_datetime(df.year, format='%Y')
+
 countries = list(df["country"].unique())
 st.write("""
 # Global Crises Data by Country
@@ -34,11 +35,67 @@ Shown below: Africa
 
 # st.plotly_chart(fig, use_container_width=True)
 
-
 country = st.selectbox("Select a column for distribution plot: ",countries)
-c = alt.Chart(df[df["country"]==country]).mark_line().encode(
-    x = 'year',
-    y='inflation_annual_cpi'
-    ).interactive()
 
-st.altair_chart(c, use_container_width=True)
+# c = alt.Chart(df[df["country"]==country]).mark_line().encode(
+#     x = 'year',
+#     y='inflation_annual_cpi'
+#     ).interactive()
+
+# st.altair_chart(c, use_container_width=True)
+
+###
+# Multi-Line chart 
+###
+import numpy as np
+df["year"] = pd.to_datetime(df.year, format='%Y')
+country_df = df[df["country"]==country]
+country_df.set_index("year", inplace=True)
+source = country_df.drop(columns=["country","cc3","case"])
+source = country_df
+source = source.reset_index().melt('year', var_name='category', value_name='y')
+
+# Create a selection that chooses the nearest point & selects based on x-value
+nearest = alt.selection(type='single', nearest=True, on='mouseover',
+                        fields=['year'], empty='none')
+
+# The basic line
+line = alt.Chart(source).mark_line(interpolate='basis').encode(
+    x='year:T',
+    y='y:Q',
+    color='category:N',
+)
+
+# Transparent selectors across the chart. This is what tells us
+# the x-value of the cursor
+selectors = alt.Chart(source).mark_point().encode(
+    x='year:T',
+    opacity=alt.value(0),
+).add_selection(
+    nearest
+)
+
+# Draw points on the line, and highlight based on selection
+points = line.mark_point().encode(
+    opacity=alt.condition(nearest, alt.value(1), alt.value(0))
+)
+
+# Draw text labels near the points, and highlight based on selection
+text = line.mark_text(align='left', dx=5, dy=-5).encode(
+    text=alt.condition(nearest, 'y:Q', alt.value(' '))
+)
+
+# Draw a rule at the location of the selection
+rules = alt.Chart(source).mark_rule(color='gray').encode(
+    x='year:T',
+).transform_filter(
+    nearest
+)
+
+# Put the five layers into a chart and bind the data
+alt.layer(
+    line, selectors, points, rules, text
+).properties(
+    width=600, height=300
+).interactive()
+
