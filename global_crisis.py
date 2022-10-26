@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 df = pd.read_csv("african_crises.csv")
-
+# st.set_page_config(layout="wide")
 #Preprocessing
 # data = df[["exch_usd", "inflation_annual_cpi", "year", "systemic_crisis","gdp_weighted_default","country"]]
 # data = data[(data["inflation_annual_cpi"]<100)]
@@ -19,6 +19,7 @@ df["banking_crisis"][df["banking_crisis"]=="crisis"] = 1
 df["banking_crisis"][df["banking_crisis"]=="no_crisis"] = 0
 df["banking_crisis"] = pd.to_numeric(df["banking_crisis"])
 df["year"] = pd.to_datetime(df.year, format='%Y')
+backup_df = df
 
 countries = list(df["country"].unique())
 st.write("""
@@ -53,15 +54,16 @@ eco_ops = st.multiselect(
     ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'gdp_weighted_default', 'inflation_annual_cpi', 'independence'])
 
 agree = st.checkbox('Scaling enabled')
-number = st.number_input('Select scaling factor', min_value=1, max_value=100, value = 1)
+sf = st.number_input('Select scaling factor', min_value=1, max_value=100, value = 1)
 
 if agree:
-    df["banking_crisis"]*=10
-    df["currency_crises"]*=10
-    df["inflation_crises"]*=10
-    df["systemic_crisis"]*=10
-    df["sovereign_external_debt_default"]*=10
-    df["domestic_debt_in_default"]*=10
+    df = backup_df
+    df["banking_crisis"]*=sf
+    df["currency_crises"]*=sf
+    df["inflation_crises"]*=sf
+    df["systemic_crisis"]*=sf
+    df["sovereign_external_debt_default"]*=sf
+    df["domestic_debt_in_default"]*=sf
 
 ###
 # Multi-Line chart 
@@ -138,3 +140,94 @@ c2 = alt.Chart(df_y).transform_fold(
 
 st.altair_chart(c2, use_container_width=True)
 
+crisis = st.radio(
+    "Select the type of crises to analyse",
+    ('inflation_crises', 'systemic_crisis', 'banking_crisis','currency_crises'))
+
+c3 = alt.Chart(country_df.reset_index()).mark_circle(size=60).encode(
+    x = 'inflation_annual_cpi:Q',
+    y = 'exch_usd:Q',
+    color=f'{crisis}:N',
+    tooltip=['sovereign_external_debt_default:N', 'domestic_debt_in_default:N','year:T']
+).properties(
+    width=300,
+    height=300
+).interactive()
+
+
+c4 = alt.Chart(country_df.reset_index()).mark_circle(size=60).encode(
+    x = 'inflation_annual_cpi:Q',
+    y = 'gdp_weighted_default:Q',
+    color=f'{crisis}:N',
+    tooltip=['sovereign_external_debt_default:N', 'domestic_debt_in_default:N','year:T']
+).properties(
+    width=300,
+    height=300
+).interactive()
+
+hc = alt.hconcat(c3, c4)
+st.altair_chart(hc, use_container_width=True)
+
+
+debt = st.select_slider(
+    'Select the type of debt in DEFAULT:',
+    options=['No Debt', 'Domestic Debt', 'International Debt', 'International + Domestic Debt'])
+
+
+df["no_crises"] = (df["inflation_crises"]==0)&(df["currency_crises"]==0)&(df["systemic_crisis"]==0)&(df["banking_crisis"]==0)
+df["no_crises"] = df["no_crises"].astype(int)
+
+if debt == "No Debt":
+    crisis_df = df[(df["domestic_debt_in_default"]==0)&(df["sovereign_external_debt_default"]==0)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
+elif debt == "Domestic Debt":
+    crisis_df = df[(df["domestic_debt_in_default"]==1)&(df["sovereign_external_debt_default"]==0)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
+elif debt == "International Debt":
+    crisis_df = df[(df["domestic_debt_in_default"]==0)&(df["sovereign_external_debt_default"]==1)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
+else:
+    crisis_df = df[(df["domestic_debt_in_default"]==1)&(df["sovereign_external_debt_default"]==1)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
+    
+
+crisis_df = crisis_df.melt('year', var_name='category', value_name='y')
+count_df = pd.DataFrame(crisis_df[crisis_df["y"]==1]["category"].value_counts()).reset_index()
+c5 = alt.Chart(count_df).mark_arc().encode(
+    theta=alt.Theta(field="category", type="quantitative"),
+    color=alt.Color(field="index", type="nominal"),
+).interactive()
+
+st.altair_chart(c5, use_container_width=True)
+
+crisis_df = df[df["country"]==country][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis','year']]
+crisis_df = crisis_df.melt('year', var_name='category', value_name='y')
+crisis_df = crisis_df[crisis_df["y"]==1]
+c6 =  alt.Chart(crisis_df, width=40).mark_circle(size=60).encode(
+x=alt.X(
+    'jitter:Q',
+    title=None,
+    axis=alt.Axis(values=[0], ticks=True, grid=False, labels=False),
+    scale=alt.Scale(),
+),
+y=alt.Y('year:T'),
+color=alt.Color('category:N', legend=None),
+column=alt.Column(
+    'category:N',
+    header=alt.Header(
+        labelAngle=-90,
+        titleOrient='top',
+        labelOrient='bottom',
+        labelAlign='right',
+        labelPadding=3,
+    ),
+),
+).transform_calculate(
+    # Generate Gaussian jitter with a Box-Muller transform
+    jitter='sqrt(-2*log(random()))*cos(2*PI*random())'
+).configure_facet(
+    spacing=0
+).configure_view(
+    stroke=None
+).properties(
+    width=150,
+    height=400
+).interactive()
+
+st.altair_chart(c6)
