@@ -117,3 +117,19 @@ c = alt.layer(
 ).interactive()
 
 st.altair_chart(c, use_container_width=True)
+
+selector = alt.selection_single(encodings=['x', 'color'])
+
+c2 = alt.Chart(df).transform_fold(
+  ['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis'],
+  as_=['column', 'value']
+).mark_bar().encode(
+  x='country:N',
+  y='sum(value):Q',
+  color=alt.condition(selector, 'column:N', alt.value('lightgray'))
+).add_selection(
+    selector
+).interactive()
+
+st.altair_chart(c2, use_container_width=True)
+
