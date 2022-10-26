@@ -48,7 +48,7 @@ crisis_options = st.multiselect(
     'Types of crises:',
     ['banking_crisis', 'systemic_crisis', 'inflation_crises','currency_crises'])
 
-st.write('You selected:', options)
+st.write('You selected:', crisis_options)
 
 eco_ops = st.multiselect(
     'Macroeconomic parameters:',
