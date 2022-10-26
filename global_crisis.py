@@ -50,7 +50,6 @@ country = st.selectbox("Select a column for distribution plot: ",countries)
 country_df = df[df["country"]==country]
 country_df.set_index("year", inplace=True)
 source = country_df.drop(columns=["country","cc3","case"])
-source = country_df
 source = source.reset_index().melt('year', var_name='category', value_name='y')
 
 # Create a selection that chooses the nearest point & selects based on x-value
