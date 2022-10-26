@@ -48,12 +48,19 @@ crisis_options = st.multiselect(
     'Types of crises:',
     ['banking_crisis', 'systemic_crisis', 'inflation_crises','currency_crises'])
 
-st.write('You selected:', crisis_options)
-
 eco_ops = st.multiselect(
     'Macroeconomic parameters:',
     ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'gdp_weighted_default', 'inflation_annual_cpi', 'independence'])
 
+agree = st.checkbox('Scaling enabled')
+
+if agree:
+    df["banking_crisis"]*=10
+    df["currency_crises"]*=10
+    df["inflation_crises"]*=10
+    df["systemic_crisis"]*=10
+    df["sovereign_external_debt_default"]*=10
+    df["domestic_debt_in_default"]*=10
 
 ###
 # Multi-Line chart 
