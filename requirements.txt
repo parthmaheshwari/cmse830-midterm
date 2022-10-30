@@ -6,4 +6,3 @@ plotly
 altair
 matplotlib
 iso3166
-vega_datasets

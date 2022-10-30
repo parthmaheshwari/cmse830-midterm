@@ -5,7 +5,7 @@ import seaborn as sns
 import plotly.express as px
 import altair as alt
 import matplotlib.pyplot as plt
-from vega_datasets import data
+# from vega_datasets import data
 from iso3166 import countries
 
 
@@ -297,9 +297,9 @@ st.altair_chart(c6)
 st.header("The big picture!")
 
 year1 = st.slider('Select the year - ', 1870, 2013, 2000)
-
+worldmap_url = "https://cdn.jsdelivr.net/npm/vega-datasets@v1.29.0/data/world-110m.json"
 df["country_code"] = df["country"].apply(f)
-countries1 = alt.topo_feature(data.world_110m.url,"countries")
+countries1 = alt.topo_feature(worldmap_url,"countries")
 c7 = alt.Chart(countries1).mark_geoshape().encode(
     color=f'{crisis}:N'
 ).transform_lookup(
