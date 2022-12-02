@@ -16,321 +16,330 @@ def f(x):
     except:
         return None
 
-
-# Preprocessing
-
-df = pd.read_csv("african_crises.csv")
-# st.set_page_config(layout="wide")
-# data = df[["exch_usd", "inflation_annual_cpi", "year", "systemic_crisis","gdp_weighted_default","country"]]
-# data = data[(data["inflation_annual_cpi"]<100)]
-# df = data.drop('systemic_crisis', axis=1)
-# df_norm = (df-df.min())/(df.max()-df.min())
-# df_norm = pd.concat((df_norm, data.systemic_crisis), 1)
-df["banking_crisis"][df["banking_crisis"]=="crisis"] = 1
-df["banking_crisis"][df["banking_crisis"]=="no_crisis"] = 0
-df["banking_crisis"] = pd.to_numeric(df["banking_crisis"])
-df = df[df["currency_crises"]<=1]
-df["year"] = pd.to_datetime(df.year, format='%Y')
-scaled_df = df.copy()
-
-# Country dropdown
-countries_list = list(df["country"].unique())
 st.write("""
-# Global Crises Data by Country
-How different macroeconomics factor can help us predict systemic crisis in different countries. 
-Shown below: Countries in Africa 
-""")
+    # Global Crises Data by Country
+    How different macroeconomics factor can help us predict systemic crisis in different countries. 
+    Shown below: Countries in Africa 
+    """)
 
 # Dataset source
 st.write("Dataset source: [https://www.hbs.edu/behavioral-finance-and-financial-stability/data/Pages/global.aspx](https://www.hbs.edu/behavioral-finance-and-financial-stability/data/Pages/global.aspx)")
 st.write("Code: [Github](https://github.com/parthmaheshwari/cmse830-midterm)")
 
-st.header("Varying trends across time and countries -")
-country = st.selectbox("Select a country: ",countries_list)
+tab1, tab2 = st.tabs(["Understanding Crises", "Predicting Crises"])
 
-# Multiselect dropdown for types of crises
-crisis_options = st.multiselect(
-    'Types of crises:',
-    ['banking_crisis', 'systemic_crisis', 'inflation_crises','currency_crises'],
-    default=['banking_crisis', 'systemic_crisis', 'inflation_crises','currency_crises'])
+with tab1:
+    # Preprocessing
 
-# Multiselect dropdown for Economic parameters
-eco_ops = st.multiselect(
-    'Macroeconomic parameters:',
-    ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'gdp_weighted_default', 'inflation_annual_cpi', 'independence'],
-    default = ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'inflation_annual_cpi', 'independence'])
-
-# Scaling the binary columns for better visibility - Checkbox + text input
-agree = st.checkbox('Scaling enabled')
-sf = st.number_input('Select scaling factor', min_value=1, max_value=100, value = 1)
-
-if agree:
+    df = pd.read_csv("african_crises.csv")
+    # st.set_page_config(layout="wide")
+    # data = df[["exch_usd", "inflation_annual_cpi", "year", "systemic_crisis","gdp_weighted_default","country"]]
+    # data = data[(data["inflation_annual_cpi"]<100)]
+    # df = data.drop('systemic_crisis', axis=1)
+    # df_norm = (df-df.min())/(df.max()-df.min())
+    # df_norm = pd.concat((df_norm, data.systemic_crisis), 1)
+    df["banking_crisis"][df["banking_crisis"]=="crisis"] = 1
+    df["banking_crisis"][df["banking_crisis"]=="no_crisis"] = 0
+    df["banking_crisis"] = pd.to_numeric(df["banking_crisis"])
+    df = df[df["currency_crises"]<=1]
+    df["year"] = pd.to_datetime(df.year, format='%Y')
     scaled_df = df.copy()
-    scaled_df["banking_crisis"]*=sf
-    scaled_df["currency_crises"]*=sf
-    scaled_df["inflation_crises"]*=sf
-    scaled_df["systemic_crisis"]*=sf
-    scaled_df["sovereign_external_debt_default"]*=sf
-    scaled_df["domestic_debt_in_default"]*=sf
-    scaled_df["independence"]*=sf
+
+    # Country dropdown
+    countries_list = list(df["country"].unique())
+    st.header("Varying trends across time and countries -")
+    country = st.selectbox("Select a country: ",countries_list)
+
+    # Multiselect dropdown for types of crises
+    crisis_options = st.multiselect(
+        'Types of crises:',
+        ['banking_crisis', 'systemic_crisis', 'inflation_crises','currency_crises'],
+        default=['banking_crisis', 'systemic_crisis', 'inflation_crises','currency_crises'])
+
+    # Multiselect dropdown for Economic parameters
+    eco_ops = st.multiselect(
+        'Macroeconomic parameters:',
+        ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'gdp_weighted_default', 'inflation_annual_cpi', 'independence'],
+        default = ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'inflation_annual_cpi', 'independence'])
+
+    # Scaling the binary columns for better visibility - Checkbox + text input
+    agree = st.checkbox('Scaling enabled')
+    sf = st.number_input('Select scaling factor', min_value=1, max_value=100, value = 1)
+
+    if agree:
+        scaled_df = df.copy()
+        scaled_df["banking_crisis"]*=sf
+        scaled_df["currency_crises"]*=sf
+        scaled_df["inflation_crises"]*=sf
+        scaled_df["systemic_crisis"]*=sf
+        scaled_df["sovereign_external_debt_default"]*=sf
+        scaled_df["domestic_debt_in_default"]*=sf
+        scaled_df["independence"]*=sf
 
 
-###
-# Multi-Line chart 
-###
-# preprocessing
-country_df = scaled_df[scaled_df["country"]==country]
-country_df.set_index("year", inplace=True)
-source = country_df.drop(columns=["country","cc3","case"])
-column_list = [i for i in list(country_df) if i not in []]
-source = source[crisis_options+eco_ops]
-source = source.reset_index().melt('year', var_name='category', value_name='y')
+    ###
+    # Multi-Line chart 
+    ###
+    # preprocessing
+    country_df = scaled_df[scaled_df["country"]==country]
+    country_df.set_index("year", inplace=True)
+    source = country_df.drop(columns=["country","cc3","case"])
+    column_list = [i for i in list(country_df) if i not in []]
+    source = source[crisis_options+eco_ops]
+    source = source.reset_index().melt('year', var_name='category', value_name='y')
 
-# Create a selection that chooses the nearest point & selects based on x-value
-nearest = alt.selection(type='single', nearest=True, on='mouseover',
-                        fields=['year'], empty='none')
+    # Create a selection that chooses the nearest point & selects based on x-value
+    nearest = alt.selection(type='single', nearest=True, on='mouseover',
+                            fields=['year'], empty='none')
 
-# The basic line
-line = alt.Chart(source).mark_line(interpolate='basis').encode(
-    x='year:T',
-    y='y:Q',
-    color='category:N',
-    strokeDash=alt.condition(
-        (alt.datum.category == 'exch_usd') | (alt.datum.category == 'domestic_debt_in_default') | (alt.datum.category == 'sovereign_external_debt_default') | (alt.datum.category == 'gdp_weighted_default') | (alt.datum.category == 'inflation_annual_cpi') | (alt.datum.category == 'independence'),
-        alt.value([5, 5]),  # dashed line: 5 pixels  dash + 5 pixels space
-        alt.value([0]),  # solid line
+    # The basic line
+    line = alt.Chart(source).mark_line(interpolate='basis').encode(
+        x='year:T',
+        y='y:Q',
+        color='category:N',
+        strokeDash=alt.condition(
+            (alt.datum.category == 'exch_usd') | (alt.datum.category == 'domestic_debt_in_default') | (alt.datum.category == 'sovereign_external_debt_default') | (alt.datum.category == 'gdp_weighted_default') | (alt.datum.category == 'inflation_annual_cpi') | (alt.datum.category == 'independence'),
+            alt.value([5, 5]),  # dashed line: 5 pixels  dash + 5 pixels space
+            alt.value([0]),  # solid line
+        )
     )
-)
 
-# Transparent selectors across the chart. This is what tells us
-# the x-value of the cursor
-selectors = alt.Chart(source).mark_point().encode(
-    x='year:T',
-    opacity=alt.value(0),
-).add_selection(
-    nearest
-)
+    # Transparent selectors across the chart. This is what tells us
+    # the x-value of the cursor
+    selectors = alt.Chart(source).mark_point().encode(
+        x='year:T',
+        opacity=alt.value(0),
+    ).add_selection(
+        nearest
+    )
 
-# Draw points on the line, and highlight based on selection
-points = line.mark_point().encode(
-    opacity=alt.condition(nearest, alt.value(1), alt.value(0))
-)
+    # Draw points on the line, and highlight based on selection
+    points = line.mark_point().encode(
+        opacity=alt.condition(nearest, alt.value(1), alt.value(0))
+    )
 
-# Draw text labels near the points, and highlight based on selection
-text = line.mark_text(align='left', dx=5, dy=-5).encode(
-    text=alt.condition(nearest, 'y:Q', alt.value(' '))
-)
+    # Draw text labels near the points, and highlight based on selection
+    text = line.mark_text(align='left', dx=5, dy=-5).encode(
+        text=alt.condition(nearest, 'y:Q', alt.value(' '))
+    )
 
-# Draw a rule at the location of the selection
-rules = alt.Chart(source).mark_rule(color='gray').encode(
-    x='year:T',
-).transform_filter(
-    nearest
-)
+    # Draw a rule at the location of the selection
+    rules = alt.Chart(source).mark_rule(color='gray').encode(
+        x='year:T',
+    ).transform_filter(
+        nearest
+    )
 
-# Put the five layers into a chart and bind the data
-c = alt.layer(
-    line, selectors, points, rules, text
-).properties(
-    width=600, height=300
-).interactive()
+    # Put the five layers into a chart and bind the data
+    c = alt.layer(
+        line, selectors, points, rules, text
+    ).properties(
+        width=600, height=300
+    ).interactive()
 
-st.altair_chart(c, use_container_width=True)
-#----------------------------------------------------------------------
+    st.altair_chart(c, use_container_width=True)
+    #----------------------------------------------------------------------
 
-###
-# Stacked bar chart 
-###
+    ###
+    # Stacked bar chart 
+    ###
 
-st.header("Which countries are more vulnerable to crises")
+    st.header("Which countries are more vulnerable to crises")
 
-# Time Slider
-values = st.slider(
-    'Select a range of years',
-    1870, 2013, (1870, 2013))
+    # Time Slider
+    values = st.slider(
+        'Select a range of years',
+        1870, 2013, (1870, 2013))
 
-# Slicing datat as per selected time
-selector = alt.selection_single(encodings=['x', 'color'])
-df_y = df[(df["year"]>=f"01-01-{values[0]}")&(df["year"]<=f"01-01-{values[-1]}")]
+    # Slicing datat as per selected time
+    selector = alt.selection_single(encodings=['x', 'color'])
+    df_y = df[(df["year"]>=f"01-01-{values[0]}")&(df["year"]<=f"01-01-{values[-1]}")]
 
-# Plot with selection, gray color used for showing focus on selected part
-c2 = alt.Chart(df_y).transform_fold(
-  ['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis'],
-  as_=['column', 'value']
-).mark_bar().encode(
-  x=alt.X('country:N', title="Countries"),
-  y=alt.Y('sum(value):Q', title="Total no. of crises"),
-  color=alt.condition(selector, 'column:N', alt.value('lightgray'))
-).add_selection(
-    selector
-).interactive()
+    # Plot with selection, gray color used for showing focus on selected part
+    c2 = alt.Chart(df_y).transform_fold(
+    ['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis'],
+    as_=['column', 'value']
+    ).mark_bar().encode(
+    x=alt.X('country:N', title="Countries"),
+    y=alt.Y('sum(value):Q', title="Total no. of crises"),
+    color=alt.condition(selector, 'column:N', alt.value('lightgray'))
+    ).add_selection(
+        selector
+    ).interactive()
 
-st.altair_chart(c2, use_container_width=True)
-#----------------------------------------------------------------------
-
-
-###
-# Concatenated scatter plots for finding cause of crises using hues
-###
-
-st.header("What causes a crisis?")
-
-# Radio button
-crisis = st.radio(
-    "Select the type of crises to analyse (use this radio button for chloropeth map as well(last))",
-    ('inflation_crises', 'systemic_crisis', 'banking_crisis','currency_crises'))
-
-# 
-c3 = alt.Chart(country_df.reset_index()).mark_circle(size=60).encode(
-    x = 'inflation_annual_cpi:Q',
-    y = 'exch_usd:Q',
-    color=f'{crisis}:N',
-    tooltip=['sovereign_external_debt_default:N', 'domestic_debt_in_default:N','year:T']
-).properties(
-    width=300,
-    height=300
-).interactive()
+    st.altair_chart(c2, use_container_width=True)
+    #----------------------------------------------------------------------
 
 
-c4 = alt.Chart(country_df.reset_index()).mark_circle(size=60).encode(
-    x = 'inflation_annual_cpi:Q',
-    y = 'gdp_weighted_default:Q',
-    color=f'{crisis}:N',
-    tooltip=['sovereign_external_debt_default:N', 'domestic_debt_in_default:N','year:T']
-).properties(
-    width=300,
-    height=300
-).interactive()
+    ###
+    # Concatenated scatter plots for finding cause of crises using hues
+    ###
 
-hc = alt.hconcat(c3, c4)
-st.altair_chart(hc, use_container_width=True)
-#----------------------------------------------------------------------
+    st.header("What causes a crisis?")
 
-###
-# Dynamic Pie chart
-###
+    # Radio button
+    crisis = st.radio(
+        "Select the type of crises to analyse (use this radio button for chloropeth map as well(last))",
+        ('inflation_crises', 'systemic_crisis', 'banking_crisis','currency_crises'))
 
-st.header("Does defaulting on a debt cause a crisis?")
+    # 
+    c3 = alt.Chart(country_df.reset_index()).mark_circle(size=60).encode(
+        x = 'inflation_annual_cpi:Q',
+        y = 'exch_usd:Q',
+        color=f'{crisis}:N',
+        tooltip=['sovereign_external_debt_default:N', 'domestic_debt_in_default:N','year:T']
+    ).properties(
+        width=300,
+        height=300
+    ).interactive()
 
-# Slider for slicing data based on different scenarios
-debt = st.select_slider(
-    'Select the type of debt in DEFAULT:',
-    options=['No Debt', 'Domestic Debt', 'International Debt', 'International + Domestic Debt'])
 
-# Adding a new column relevant to the story of the plot
-df["no_crises"] = (df["inflation_crises"]==0)&(df["currency_crises"]==0)&(df["systemic_crisis"]==0)&(df["banking_crisis"]==0)
-df["no_crises"] = df["no_crises"].astype(int)
+    c4 = alt.Chart(country_df.reset_index()).mark_circle(size=60).encode(
+        x = 'inflation_annual_cpi:Q',
+        y = 'gdp_weighted_default:Q',
+        color=f'{crisis}:N',
+        tooltip=['sovereign_external_debt_default:N', 'domestic_debt_in_default:N','year:T']
+    ).properties(
+        width=300,
+        height=300
+    ).interactive()
 
-# Slicing dataframe based on selection
-if debt == "No Debt":
-    crisis_df = df[(df["domestic_debt_in_default"]==0)&(df["sovereign_external_debt_default"]==0)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
-elif debt == "Domestic Debt":
-    crisis_df = df[(df["domestic_debt_in_default"]==1)&(df["sovereign_external_debt_default"]==0)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
-elif debt == "International Debt":
-    crisis_df = df[(df["domestic_debt_in_default"]==0)&(df["sovereign_external_debt_default"]==1)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
-else:
-    crisis_df = df[(df["domestic_debt_in_default"]==1)&(df["sovereign_external_debt_default"]==1)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
-    
-# Aggregation for Pie chart
-crisis_df = crisis_df.reset_index().melt('year', var_name='category', value_name='y')
-count_df = pd.DataFrame(crisis_df[crisis_df["y"]==1]["category"].value_counts()).reset_index()
+    hc = alt.hconcat(c3, c4)
+    st.altair_chart(hc, use_container_width=True)
+    #----------------------------------------------------------------------
 
-# Pie chart plot
-c5 = alt.Chart(count_df).mark_arc().encode(
-    theta=alt.Theta(field="category", type="quantitative"),
-    color=alt.Color(field="index", type="nominal"),
-).interactive()
+    ###
+    # Dynamic Pie chart
+    ###
 
-st.altair_chart(c5, use_container_width=True)
-#----------------------------------------------------------------------
+    st.header("Does defaulting on a debt cause a crisis?")
 
-###
-# Catplot with gaussian jitter
-###
+    # Slider for slicing data based on different scenarios
+    debt = st.select_slider(
+        'Select the type of debt in DEFAULT:',
+        options=['No Debt', 'Domestic Debt', 'International Debt', 'International + Domestic Debt'])
 
-st.header("Can one crisis cause another?")
+    # Adding a new column relevant to the story of the plot
+    df["no_crises"] = (df["inflation_crises"]==0)&(df["currency_crises"]==0)&(df["systemic_crisis"]==0)&(df["banking_crisis"]==0)
+    df["no_crises"] = df["no_crises"].astype(int)
 
-# Preprocessing for time series analysis of crises
-crisis_df1 = df[df["country"]==country][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis','year']]
-crisis_df1 = crisis_df1.melt('year', var_name='category', value_name='y')
-crisis_df1 = crisis_df1[crisis_df1["y"]==1]
+    # Slicing dataframe based on selection
+    if debt == "No Debt":
+        crisis_df = df[(df["domestic_debt_in_default"]==0)&(df["sovereign_external_debt_default"]==0)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
+    elif debt == "Domestic Debt":
+        crisis_df = df[(df["domestic_debt_in_default"]==1)&(df["sovereign_external_debt_default"]==0)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
+    elif debt == "International Debt":
+        crisis_df = df[(df["domestic_debt_in_default"]==0)&(df["sovereign_external_debt_default"]==1)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
+    else:
+        crisis_df = df[(df["domestic_debt_in_default"]==1)&(df["sovereign_external_debt_default"]==1)][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis', 'no_crises','year']]
+        
+    # Aggregation for Pie chart
+    crisis_df = crisis_df.reset_index().melt('year', var_name='category', value_name='y')
+    count_df = pd.DataFrame(crisis_df[crisis_df["y"]==1]["category"].value_counts()).reset_index()
 
-# Catplot
-c6 =  alt.Chart(crisis_df1, width=40).mark_circle(size=60).encode(
-x=alt.X(
-    'jitter:Q',
-    title=None,
-    axis=alt.Axis(values=[0], ticks=True, grid=False, labels=False),
-    scale=alt.Scale(),
-),
-y=alt.Y('year:T'),
-color=alt.Color('category:N', legend=None),
-column=alt.Column(
-    'category:N',
-    header=alt.Header(
-        labelAngle=-90,
-        titleOrient='top',
-        labelOrient='bottom',
-        labelAlign='right',
-        labelPadding=3,
+    # Pie chart plot
+    c5 = alt.Chart(count_df).mark_arc().encode(
+        theta=alt.Theta(field="category", type="quantitative"),
+        color=alt.Color(field="index", type="nominal"),
+    ).interactive()
+
+    st.altair_chart(c5, use_container_width=True)
+    #----------------------------------------------------------------------
+
+    ###
+    # Catplot with gaussian jitter
+    ###
+
+    st.header("Can one crisis cause another?")
+
+    # Preprocessing for time series analysis of crises
+    crisis_df1 = df[df["country"]==country][['currency_crises', 'inflation_crises','systemic_crisis', 'banking_crisis','year']]
+    crisis_df1 = crisis_df1.melt('year', var_name='category', value_name='y')
+    crisis_df1 = crisis_df1[crisis_df1["y"]==1]
+
+    # Catplot
+    c6 =  alt.Chart(crisis_df1, width=40).mark_circle(size=60).encode(
+    x=alt.X(
+        'jitter:Q',
+        title=None,
+        axis=alt.Axis(values=[0], ticks=True, grid=False, labels=False),
+        scale=alt.Scale(),
     ),
-),
-).transform_calculate(
-    # Generate Gaussian jitter with a Box-Muller transform
-    jitter='sqrt(-2*log(random()))*cos(2*PI*random())'
-).configure_facet(
-    spacing=0
-).configure_view(
-    stroke=None
-).properties(
-    width=150,
-    height=400
-).interactive()
+    y=alt.Y('year:T'),
+    color=alt.Color('category:N', legend=None),
+    column=alt.Column(
+        'category:N',
+        header=alt.Header(
+            labelAngle=-90,
+            titleOrient='top',
+            labelOrient='bottom',
+            labelAlign='right',
+            labelPadding=3,
+        ),
+    ),
+    ).transform_calculate(
+        # Generate Gaussian jitter with a Box-Muller transform
+        jitter='sqrt(-2*log(random()))*cos(2*PI*random())'
+    ).configure_facet(
+        spacing=0
+    ).configure_view(
+        stroke=None
+    ).properties(
+        width=150,
+        height=400
+    ).interactive()
 
-st.altair_chart(c6)
-#----------------------------------------------------------------------
+    st.altair_chart(c6)
+    #----------------------------------------------------------------------
 
-###
-# Chrolopeth map
-###
+    ###
+    # Chrolopeth map
+    ###
 
-st.header("The big picture!")
+    st.header("The big picture!")
 
-year1 = st.slider('Select the year - ', 1870, 2013, 2000)
-worldmap_url = "https://cdn.jsdelivr.net/npm/vega-datasets@v1.29.0/data/world-110m.json"
-df["country_code"] = df["country"].apply(f)
-countries1 = alt.topo_feature(worldmap_url,"countries")
-c7 = alt.Chart(countries1).mark_geoshape().encode(
-    color=f'{crisis}:N'
-).transform_lookup(
-    lookup='id',
-    from_=alt.LookupData(df[df["year"]==f"{year1}-01-01"], 'country_code', [crisis])
-).project(
-    type='naturalEarth1'
-).properties(
-    width=500,
-    height=300,
-    title='Crises over years in Africa'
-).interactive()
-st.altair_chart(c7, use_container_width=True)
-#----------------------------------------------------------------------
+    year1 = st.slider('Select the year - ', 1870, 2013, 2000)
+    worldmap_url = "https://cdn.jsdelivr.net/npm/vega-datasets@v1.29.0/data/world-110m.json"
+    df["country_code"] = df["country"].apply(f)
+    countries1 = alt.topo_feature(worldmap_url,"countries")
+    c7 = alt.Chart(countries1).mark_geoshape().encode(
+        color=f'{crisis}:N'
+    ).transform_lookup(
+        lookup='id',
+        from_=alt.LookupData(df[df["year"]==f"{year1}-01-01"], 'country_code', [crisis])
+    ).project(
+        type='naturalEarth1'
+    ).properties(
+        width=500,
+        height=300,
+        title='Crises over years in Africa'
+    ).interactive()
+    st.altair_chart(c7, use_container_width=True)
+    #----------------------------------------------------------------------
 
-# Additional(useless/non-functional) plots
-#1. 
-# c = alt.Chart(df[df["country"]==country]).mark_line().encode(
-#     x = 'year',
-#     y='inflation_annual_cpi'
-#     ).interactive()
+    # Additional(useless/non-functional) plots
+    #1. 
+    # c = alt.Chart(df[df["country"]==country]).mark_line().encode(
+    #     x = 'year',
+    #     y='inflation_annual_cpi'
+    #     ).interactive()
 
-# st.altair_chart(c, use_container_width=True)
+    # st.altair_chart(c, use_container_width=True)
 
-#3. 
-# fig = px.scatter_3d(data, x = 'exch_usd', 
-#                     y = 'inflation_annual_cpi', 
-#                     z = 'year',
-#                     color = 'country',
-#                     size_max = 20, 
-#                     opacity = 0.5)
+    #3. 
+    # fig = px.scatter_3d(data, x = 'exch_usd', 
+    #                     y = 'inflation_annual_cpi', 
+    #                     z = 'year',
+    #                     color = 'country',
+    #                     size_max = 20, 
+    #                     opacity = 0.5)
 
-# st.plotly_chart(fig, use_container_width=True)
+    # st.plotly_chart(fig, use_container_width=True)
 
+with tab2:
+    df = pd.read_csv("african_crises.csv")
+    df["banking_crisis"][df["banking_crisis"]=="crisis"] = 1
+    df["banking_crisis"][df["banking_crisis"]=="no_crisis"] = 0
+    df["banking_crisis"] = pd.to_numeric(df["banking_crisis"])
+
+    st.header("Feature Engineering")
