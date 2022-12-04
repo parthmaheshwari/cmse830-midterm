@@ -5,8 +5,45 @@ import seaborn as sns
 import plotly.express as px
 import altair as alt
 import matplotlib.pyplot as plt
-# from vega_datasets import data
 from iso3166 import countries
+from ast import literal_eval
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler, Normalizer
+from sklearn.model_selection import train_test_split
+from imblearn.over_sampling import SMOTE
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import roc_curve
+from sklearn.metrics import confusion_matrix
+
+
+def generate_roc_plot(fpr, tpr, thresholds):
+    roc_df = pd.DataFrame()
+    roc_df['fpr'] = fpr
+    roc_df['tpr'] = tpr
+    roc_df['thresholds'] = thresholds
+    roc_line = alt.Chart(roc_df).mark_line(color = 'red').encode(
+                                                        alt.X('fpr', title="false positive rate"),
+                                                        alt.Y('tpr', title="true positive rate"))
+    roc = alt.Chart(roc_df).mark_area(fillOpacity = 0.5, fill = 'red').encode(alt.X('fpr', title="false positive rate"),
+                                                            alt.Y('tpr', title="true positive rate"))
+    baseline = alt.Chart(roc_df).mark_line(strokeDash=[20,5], color = 'black').encode(alt.X('thresholds', scale = alt.Scale(domain=[0, 1]), title=None),
+                                                        alt.Y('thresholds', scale = alt.Scale(domain=[0, 1]), title=None))
+    c = roc_line + roc + baseline.properties(title='ROC Curve').interactive()
+    return c
+
+
+def get_plots(mod, X_train, X_test, y_train, y_test):
+    mod.fit(X_train, y_train)
+    y_pred = mod.predict(X_test)
+    fpr, tpr, thresholds = roc_curve(y_test, mod.predict_proba(X_test)[:,1])
+    cm = confusion_matrix(y_pred, y_test)
+    c = generate_roc_plot(fpr, tpr, thresholds)
+    fig = plt.figure(figsize=(4, 4))
+    sns.heatmap(cm, annot=True,fmt='g')
+    return c, fig
 
 
 def f(x):
@@ -16,6 +53,7 @@ def f(x):
     except:
         return None
 
+st.set_page_config(layout="wide")
 st.write("""
     # Global Crises Data by Country
     How different macroeconomics factor can help us predict systemic crisis in different countries. 
@@ -336,10 +374,189 @@ with tab1:
 
     # st.plotly_chart(fig, use_container_width=True)
 
+
+
 with tab2:
+    if 'knn' not in st.session_state:
+	    st.session_state.knn = 0
+    if 'lr' not in st.session_state:
+	    st.session_state.lr = 0
+    if 'svc' not in st.session_state:
+	    st.session_state.svc = 0
+    if 'mlp' not in st.session_state:
+	    st.session_state.mlp = 0
+    if 'rf' not in st.session_state:
+	    st.session_state.rf = 0
+
     df = pd.read_csv("african_crises.csv")
     df["banking_crisis"][df["banking_crisis"]=="crisis"] = 1
     df["banking_crisis"][df["banking_crisis"]=="no_crisis"] = 0
     df["banking_crisis"] = pd.to_numeric(df["banking_crisis"])
 
+    y_name = st.selectbox("Select the predicted variable: ",['banking_crisis', 'systemic_crisis', 'inflation_crises','currency_crises'])
+    other_cols = [i for i in ['banking_crisis', 'systemic_crisis', 'inflation_crises','currency_crises'] if i != y_name]
+
     st.header("Feature Engineering")
+    
+    st.subheader("Select Input Features -")
+    
+     # Multiselect dropdown for Economic parameters
+    col_names = st.multiselect(
+        'Input features:',
+        ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'gdp_weighted_default', 'inflation_annual_cpi', 'independence']+other_cols,
+        default = ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'gdp_weighted_default', 'inflation_annual_cpi', 'independence']+other_cols)
+
+
+    # Label Encoder
+    agree = st.checkbox('Encode categorical variables?')
+    if agree:
+        col_names.append("country_cat")
+
+    df["country_cat"] = LabelEncoder().fit_transform(df["country"])
+    df.drop(columns=["cc3","case","year","country"],inplace=True)
+
+    c11 = alt.Chart(df).mark_bar().encode(
+    alt.Y(f'{y_name}:N'),
+    alt.X(f'count({y_name}):Q'))
+    st.altair_chart(c11, use_container_width=True)
+
+    # Shift columns
+    st.subheader("Shift columns - ")
+    prev_col_names = st.multiselect(
+        'Columns to be shifted:',
+        ['exch_usd', 'domestic_debt_in_default', 'sovereign_external_debt_default', 'gdp_weighted_default', 'inflation_annual_cpi', 'independence']+other_cols,
+        default = ['exch_usd', 'gdp_weighted_default', 'inflation_annual_cpi'])
+
+    nshifts = st.number_input('Number of shifts', value=1)
+
+    for col in prev_col_names:
+        df[f"prev{nshifts}_{col}"] = df.groupby('country_cat')[col].shift(nshifts)
+
+    df.dropna(inplace=True)
+
+    # Oversample
+    st.subheader("Oversampling -")
+    percent_os = st.slider('Set Minority class-Majority class ratio:', 0.00, 1.00, 1.00, step = 0.05)
+    X = df.drop(columns = [y_name])
+    y = df[y_name]
+    X_resampled, y = SMOTE(sampling_strategy=percent_os, random_state =42).fit_resample(X, y)
+    X = pd.DataFrame(X_resampled, columns=X_resampled.columns)
+
+    c12 = alt.Chart(pd.DataFrame(y)).mark_bar().encode(
+    alt.Y(f'{y_name}:N'),
+    alt.X(f'count({y_name}):Q'))
+    st.altair_chart(c12, use_container_width=True)
+
+    
+    st.subheader("PCA -")
+
+    st.header("Train Test Split")
+    # Train Test split
+    percent_test = st.slider('Set Train-Test ratio:', 0.00, 1.00, 0.30, step = 0.05)
+    X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=percent_test,random_state=42)
+
+    st.subheader("Scaling -")
+
+    scaler_type = st.radio(
+        "Select the type of scaling operation/normalization -",
+        ('No scaling', 'MinMax', 'Standard', 'Normalize'))
+
+    if scaler_type == "MinMax":
+        scaler = MinMaxScaler()
+    elif scaler_type == "Standard":
+        scaler = StandardScaler()
+    elif scaler_type == "Normalize":
+        scaler = Normalizer()
+
+    if scaler_type!="No scaling":
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
+
+    st.header("Train Estimators")
+    df.dropna(inplace=True)
+
+    col1, col2, col3, col4, col5 = st.columns(5, gap="medium")
+
+    with col1:
+        st.subheader("Logistic Regression")
+        penalty = st.selectbox('Select penalty -',('l1', 'l2', 'elasticnet'),index=1)
+        solver = st.selectbox("Select solver -", ('newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'),index=1)
+        c = st.select_slider('Select regularization strength -', options=[1,0.1,0.01,0.001],value=1)
+
+        lr = LogisticRegression(penalty = penalty, solver = solver, C = c)
+        c13, fig_lr = get_plots(lr, X_train, X_test, y_train, y_test)
+        
+        if st.button('Evaluate LR'):
+            st.session_state.lr += 1
+
+        if st.session_state.lr > 0:       
+            st.altair_chart(c13, use_container_width=True)
+            st.pyplot(fig_lr, use_container_width=True)
+
+
+    with col2:
+        st.subheader("Support Vector Machine")
+        kernel = st.selectbox('Select kernel -',('linear', 'poly', 'rbf', 'sigmoid'),index=2)
+        gamma = st.selectbox("Select gamma -", ('scale', 'auto'),index=0)
+        c = st.select_slider('Select regularization parameter -', options=[1,0.1,0.01,0.001],value=1)
+
+        svc = SVC(kernel = kernel, gamma = gamma, C = c, probability=True, max_iter=1000)
+        c14, fig_svc = get_plots(svc, X_train, X_test, y_train, y_test)
+        
+        if st.button('Evaluate SVC'):
+            st.session_state.svc += 1
+
+        if st.session_state.svc > 0:       
+            st.altair_chart(c14, use_container_width=True)
+            st.pyplot(fig_svc, use_container_width=True)
+
+
+    with col3:
+        st.subheader("K Neighbors Classifier")
+        weights = st.selectbox('Select weight function -',('uniform', 'distance'),index=0)
+        algorithm = st.selectbox("Select algorithm -", ('auto', 'ball_tree', 'kd_tree', 'brute'),index=0)
+        n_neighbors = st.select_slider('Select number of neighbors -', options=list(range(1,30,2)),value=5)
+        
+        knn = KNeighborsClassifier(n_neighbors = n_neighbors, weights=weights, algorithm=algorithm)
+        c15, fig_knn = get_plots(knn, X_train, X_test, y_train, y_test)
+
+        if st.button('Evaluate KNN'):
+            st.session_state.knn += 1
+
+        if st.session_state.knn > 0:
+            st.altair_chart(c15, use_container_width=True)
+            st.pyplot(fig_knn, use_container_width=True)
+
+
+    with col4:
+        st.subheader("Multilayer Perceptron")
+        activation = st.selectbox('Select activation function -', options=['identity', 'logistic', 'tanh', 'relu'],index=3)
+        solver = st.selectbox('Select solver -',('lbfgs', 'sgd', 'adam'), index=2)
+        hidden_layer_sizes = st.text_input("Select hidden layer sizes -", "100,")
+        
+        mlp = MLPClassifier(activation = activation, solver=solver, hidden_layer_sizes=literal_eval(hidden_layer_sizes))
+        c16, fig_mlp = get_plots(mlp, X_train, X_test, y_train, y_test)
+
+        if st.button('Evaluate MLP'):
+            st.session_state.mlp += 1
+
+        if st.session_state.mlp > 0:
+            st.altair_chart(c16, use_container_width=True)
+            st.pyplot(fig_mlp, use_container_width=True)
+
+    with col5:
+        st.subheader("Random Forest")
+        criterion = st.selectbox('Select criterion for split -', options=['gini', 'entropy', 'log_loss'],index=0)
+        n_estimators = st.select_slider('Select number of estimators -', options=list(range(100,501,50)),value=100)
+        max_depth = st.select_slider('Select maximum depth -', options=list(range(1,11,1)),value=10)
+        
+        rf = RandomForestClassifier(criterion = criterion, n_estimators=n_estimators, max_depth=max_depth)
+        c17, fig_rf = get_plots(rf, X_train, X_test, y_train, y_test)
+
+        if st.button('Evaluate RF'):
+            st.session_state.rf += 1
+
+        if st.session_state.rf > 0:
+            st.altair_chart(c17, use_container_width=True)
+            st.pyplot(fig_rf, use_container_width=True)
+
