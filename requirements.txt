@@ -6,3 +6,6 @@ plotly
 altair
 matplotlib
 iso3166
+scikit-learn
+imbalanced-learn
+
