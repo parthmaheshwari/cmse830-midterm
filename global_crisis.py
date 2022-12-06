@@ -41,8 +41,8 @@ def get_plots(mod, X_train, X_test, y_train, y_test):
     fpr, tpr, thresholds = roc_curve(y_test, mod.predict_proba(X_test)[:,1])
     cm = confusion_matrix(y_pred, y_test)
     c = generate_roc_plot(fpr, tpr, thresholds)
-    fig = plt.figure(figsize=(4, 4))
-    sns.heatmap(cm, annot=True,fmt='g')
+    # fig = plt.figure(figsize=(4, 4))
+    fig = sns.heatmap(cm, annot=True,fmt='g').figure
     return c, fig
 
 
