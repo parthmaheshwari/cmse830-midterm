@@ -44,7 +44,7 @@ def get_plots(mod, X_train, X_test, y_train, y_test):
     fig = plt.figure(figsize=(4, 4))
     sns.heatmap(cm, annot=True,fmt='g')
     st.altair_chart(c, use_container_width=True)
-    st.pyplot(fig, use_container_width=True)
+    st.pyplot(fig)
     return c, fig
 
 
