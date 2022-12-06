@@ -41,8 +41,9 @@ def get_plots(mod, X_train, X_test, y_train, y_test):
     fpr, tpr, thresholds = roc_curve(y_test, mod.predict_proba(X_test)[:,1])
     cm = confusion_matrix(y_pred, y_test)
     c = generate_roc_plot(fpr, tpr, thresholds)
-    # fig = plt.figure(figsize=(4, 4))
-    fig = sns.heatmap(cm, annot=True,fmt='g').figure
+    fig = plt.figure(figsize=(4, 4))
+    sns.heatmap(cm, annot=True,fmt='g')
+    st.pyplot(fig)
     return c, fig
 
 
@@ -484,14 +485,14 @@ with tab2:
         c = st.select_slider('Select regularization strength -', options=[1,0.1,0.01,0.001],value=1)
 
         lr = LogisticRegression(penalty = penalty, solver = solver, C = c)
-        c13, fig_lr = get_plots(lr, X_train, X_test, y_train, y_test)
         
         if st.button('Evaluate LR'):
             st.session_state.lr += 1
 
-        if st.session_state.lr > 0:       
+        if st.session_state.lr > 0:      
+            c13, fig_lr = get_plots(lr, X_train, X_test, y_train, y_test) 
             st.altair_chart(c13, use_container_width=True)
-            st.pyplot(fig_lr, use_container_width=True)
+            # st.pyplot(fig_lr, use_container_width=True)
 
 
     with col2:
