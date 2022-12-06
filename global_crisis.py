@@ -43,7 +43,6 @@ def get_plots(mod, X_train, X_test, y_train, y_test):
     c = generate_roc_plot(fpr, tpr, thresholds)
     fig = plt.figure(figsize=(4, 4))
     sns.heatmap(cm, annot=True,fmt='g')
-    st.pyplot(fig)
     return c, fig
 
 
