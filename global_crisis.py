@@ -43,7 +43,6 @@ def get_plots(mod, X_train, X_test, y_train, y_test):
     c = generate_roc_plot(fpr, tpr, thresholds)
     fig = plt.figure(figsize=(4, 4))
     sns.heatmap(cm, annot=True,fmt='g')
-    st.altair_chart(c, use_container_width=True)
     st.pyplot(fig)
     return c, fig
 
@@ -486,12 +485,15 @@ with tab2:
         c = st.select_slider('Select regularization strength -', options=[1,0.1,0.01,0.001],value=1)
 
         lr = LogisticRegression(penalty = penalty, solver = solver, C = c)
+        c13, fig_lr = get_plots(lr, X_train, X_test, y_train, y_test)
         
         if st.button('Evaluate LR'):
             st.session_state.lr += 1
 
-        if st.session_state.lr > 0:      
-            c13, fig_lr = get_plots(lr, X_train, X_test, y_train, y_test) 
+        if st.session_state.lr > 0:       
+            st.altair_chart(c13, use_container_width=True)
+            st.pyplot(fig_lr)
+
 
     with col2:
         st.subheader("Support Vector Machine")
@@ -500,13 +502,14 @@ with tab2:
         c = st.select_slider('Select regularization parameter -', options=[1,0.1,0.01,0.001],value=1)
 
         svc = SVC(kernel = kernel, gamma = gamma, C = c, probability=True, max_iter=1000)
+        c14, fig_svc = get_plots(svc, X_train, X_test, y_train, y_test)
         
         if st.button('Evaluate SVC'):
             st.session_state.svc += 1
 
         if st.session_state.svc > 0:       
-            c14, fig_svc = get_plots(svc, X_train, X_test, y_train, y_test)
-
+            st.altair_chart(c14, use_container_width=True)
+            st.pyplot(fig_svc)
 
 
     with col3:
@@ -516,12 +519,14 @@ with tab2:
         n_neighbors = st.select_slider('Select number of neighbors -', options=list(range(1,30,2)),value=5)
         
         knn = KNeighborsClassifier(n_neighbors = n_neighbors, weights=weights, algorithm=algorithm)
+        c15, fig_knn = get_plots(knn, X_train, X_test, y_train, y_test)
 
         if st.button('Evaluate KNN'):
             st.session_state.knn += 1
 
         if st.session_state.knn > 0:
-            c15, fig_knn = get_plots(knn, X_train, X_test, y_train, y_test)
+            st.altair_chart(c15, use_container_width=True)
+            st.pyplot(fig_knn)
 
 
     with col4:
@@ -531,12 +536,14 @@ with tab2:
         hidden_layer_sizes = st.text_input("Select hidden layer sizes -", "100,")
         
         mlp = MLPClassifier(activation = activation, solver=solver, hidden_layer_sizes=literal_eval(hidden_layer_sizes))
+        c16, fig_mlp = get_plots(mlp, X_train, X_test, y_train, y_test)
 
         if st.button('Evaluate MLP'):
             st.session_state.mlp += 1
 
         if st.session_state.mlp > 0:
-            c16, fig_mlp = get_plots(mlp, X_train, X_test, y_train, y_test)
+            st.altair_chart(c16, use_container_width=True)
+            st.pyplot(fig_mlp)
 
     with col5:
         st.subheader("Random Forest")
@@ -545,10 +552,12 @@ with tab2:
         max_depth = st.select_slider('Select maximum depth -', options=list(range(1,11,1)),value=10)
         
         rf = RandomForestClassifier(criterion = criterion, n_estimators=n_estimators, max_depth=max_depth)
+        c17, fig_rf = get_plots(rf, X_train, X_test, y_train, y_test)
 
         if st.button('Evaluate RF'):
             st.session_state.rf += 1
 
         if st.session_state.rf > 0:
-            c17, fig_rf = get_plots(rf, X_train, X_test, y_train, y_test)
+            st.altair_chart(c17, use_container_width=True)
+            st.pyplot(fig_rf)
 
