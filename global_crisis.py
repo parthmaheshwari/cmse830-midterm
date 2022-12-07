@@ -15,8 +15,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
-from sklearn.metrics import roc_curve
-from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import roc_curve, confusion_matrix, accuracy_score, f1_score, precision_score, recall_score
 
 
 def generate_roc_plot(fpr, tpr, thresholds):
@@ -43,7 +43,13 @@ def get_plots(mod, X_train, X_test, y_train, y_test):
     c = generate_roc_plot(fpr, tpr, thresholds)
     fig = plt.figure(figsize=(4, 4))
     sns.heatmap(cm, annot=True,fmt='g')
-    return c, fig
+
+    precision = round(precision_score(y_test, y_pred),3)
+    recall = round(recall_score(y_test, y_pred),3)
+    accuracy = round(accuracy_score(y_test, y_pred),3)
+    f1 = round(f1_score(y_test, y_pred),3)
+    
+    return c, fig, precision, recall, accuracy, f1
 
 
 def f(x):
@@ -472,19 +478,21 @@ with tab2:
         X_train = scaler.fit_transform(X_train)
         X_test = scaler.transform(X_test)
 
-    st.header("Train Estimators")
+    st.header("Train, Evaluate and Tune Estimators with Cross Validation")
     df.dropna(inplace=True)
 
     col1, col2, col3, col4, col5 = st.columns(5, gap="medium")
 
     with col1:
         st.subheader("Logistic Regression")
-        penalty = st.selectbox('Select penalty -',('l1', 'l2', 'elasticnet'),index=1)
-        solver = st.selectbox("Select solver -", ('newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'),index=1)
-        c = st.select_slider('Select regularization strength -', options=[1,0.1,0.01,0.001],value=1)
+        parameters_lr = {"penalty":('l1', 'l2', 'elasticnet'), "solver":('newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'), "C":[1,0.1,0.01,0.001]}
+        penalty = st.selectbox('Select penalty -',parameters_lr["penalty"],index=1)
+        solver = st.selectbox("Select solver -", parameters_lr["solver"],index=1)
+        c = st.select_slider('Select regularization strength -', parameters_lr["C"],value=0.1)
 
         lr = LogisticRegression(penalty = penalty, solver = solver, C = c)
-        c13, fig_lr = get_plots(lr, X_train, X_test, y_train, y_test)
+        c13, fig_lr, precision_lr, recall_lr, f1_lr, accuracy_lr = get_plots(lr, X_train, X_test, y_train, y_test)
+
         
         if st.button('Evaluate LR'):
             st.session_state.lr += 1
@@ -493,15 +501,33 @@ with tab2:
             st.altair_chart(c13, use_container_width=True)
             st.pyplot(fig_lr)
 
+            if 'lr_max_precision' not in st.session_state:
+	            st.session_state.lr_max_precision, st.session_state.lr_max_recall, st.session_state.lr_max_f1, st.session_state.lr_max_accuracy= precision_lr, recall_lr, f1_lr, accuracy_lr                
+
+            st.metric(label="Precision", value=precision_lr, delta = str(round(precision_lr-st.session_state.lr_max_precision,3)))
+            st.metric(label="Recall", value=recall_lr, delta = str(round(recall_lr-st.session_state.lr_max_recall,3)))
+            st.metric(label="F1-score", value=f1_lr, delta = str(round(f1_lr-st.session_state.lr_max_f1,3)))
+            st.metric(label="Accuracy", value=accuracy_lr, delta = str(round(accuracy_lr-st.session_state.lr_max_accuracy,3)))
+            st.session_state.lr_max_precision = max(st.session_state.lr_max_precision, precision_lr)
+            st.session_state.lr_max_recall = max(st.session_state.lr_max_recall, recall_lr)
+            st.session_state.lr_max_f1 = max(st.session_state.lr_max_f1, f1_lr)
+            st.session_state.lr_max_accuracy = max(st.session_state.lr_max_accuracy, accuracy_lr)
+
+            if st.button('Tune LR with CV'):
+                clf = GridSearchCV(lr, parameters_lr, cv=3)
+                clf.fit(X_train, y_train)
+                st.json(clf.best_params_)
+
 
     with col2:
         st.subheader("Support Vector Machine")
-        kernel = st.selectbox('Select kernel -',('linear', 'poly', 'rbf', 'sigmoid'),index=2)
-        gamma = st.selectbox("Select gamma -", ('scale', 'auto'),index=0)
-        c = st.select_slider('Select regularization parameter -', options=[1,0.1,0.01,0.001],value=1)
+        parameters_svc = {"kernel":('linear', 'poly', 'rbf', 'sigmoid'), "gamma":('scale', 'auto'), "C":[1,0.1,0.01,0.001]}
+        kernel = st.selectbox('Select kernel -',parameters_svc["kernel"],index=2)
+        gamma = st.selectbox("Select gamma -", parameters_svc["gamma"],index=0)
+        c = st.select_slider('Select regularization parameter -', options=parameters_svc["C"],value=1)
 
-        svc = SVC(kernel = kernel, gamma = gamma, C = c, probability=True, max_iter=1000)
-        c14, fig_svc = get_plots(svc, X_train, X_test, y_train, y_test)
+        svc = SVC(kernel = kernel, gamma = gamma, C = c, probability=True, max_iter=10000)
+        c14, fig_svc, precision_svc, recall_svc, f1_svc, accuracy_svc = get_plots(svc, X_train, X_test, y_train, y_test)
         
         if st.button('Evaluate SVC'):
             st.session_state.svc += 1
@@ -509,16 +535,26 @@ with tab2:
         if st.session_state.svc > 0:       
             st.altair_chart(c14, use_container_width=True)
             st.pyplot(fig_svc)
+            st.metric(label="Precision", value=precision_svc)
+            st.metric(label="Recall", value=recall_svc)
+            st.metric(label="F1-score", value=f1_svc)
+            st.metric(label="Accuracy", value=accuracy_svc)
+
+            if st.button('Tune SVC with CV(Dont)'):
+                clf = GridSearchCV(svc, parameters_svc, cv=3)
+                clf.fit(X_train, y_train)
+                st.json(clf.best_params_)
 
 
     with col3:
         st.subheader("K Neighbors Classifier")
-        weights = st.selectbox('Select weight function -',('uniform', 'distance'),index=0)
-        algorithm = st.selectbox("Select algorithm -", ('auto', 'ball_tree', 'kd_tree', 'brute'),index=0)
-        n_neighbors = st.select_slider('Select number of neighbors -', options=list(range(1,30,2)),value=5)
+        parameters_knn = {"weights":('uniform', 'distance'), "algorithm":('auto', 'ball_tree', 'kd_tree', 'brute'), "n_neighbors":list(range(1,30,2))}
+        weights = st.selectbox('Select weight function -',parameters_knn["weights"],index=0)
+        algorithm = st.selectbox("Select algorithm -", parameters_knn["algorithm"],index=0)
+        n_neighbors = st.select_slider('Select number of neighbors -', options=parameters_knn["n_neighbors"],value=5)
         
         knn = KNeighborsClassifier(n_neighbors = n_neighbors, weights=weights, algorithm=algorithm)
-        c15, fig_knn = get_plots(knn, X_train, X_test, y_train, y_test)
+        c15, fig_knn, precision_knn, recall_knn, f1_knn, accuracy_knn = get_plots(knn, X_train, X_test, y_train, y_test)
 
         if st.button('Evaluate KNN'):
             st.session_state.knn += 1
@@ -526,16 +562,33 @@ with tab2:
         if st.session_state.knn > 0:
             st.altair_chart(c15, use_container_width=True)
             st.pyplot(fig_knn)
+            if 'knn_max_precision' not in st.session_state:
+	            st.session_state.knn_max_precision, st.session_state.knn_max_recall, st.session_state.knn_max_f1, st.session_state.knn_max_accuracy= precision_knn, recall_knn, f1_knn, accuracy_knn                
+
+            st.metric(label="Precision", value=precision_knn, delta = str(round(precision_knn-st.session_state.knn_max_precision,3)))
+            st.metric(label="Recall", value=recall_knn, delta = str(round(recall_knn-st.session_state.knn_max_recall,3)))
+            st.metric(label="F1-score", value=f1_knn, delta = str(round(f1_knn-st.session_state.knn_max_f1,3)))
+            st.metric(label="Accuracy", value=accuracy_knn, delta = str(round(accuracy_knn-st.session_state.knn_max_accuracy,3)))
+            st.session_state.knn_max_precision = max(st.session_state.knn_max_precision, precision_knn)
+            st.session_state.knn_max_recall = max(st.session_state.knn_max_recall, recall_knn)
+            st.session_state.knn_max_f1 = max(st.session_state.knn_max_f1, f1_knn)
+            st.session_state.knn_max_accuracy = max(st.session_state.knn_max_accuracy, accuracy_knn)
+
+            if st.button('Tune KNN with CV'):
+                clf = GridSearchCV(knn, parameters_knn, cv=3)
+                clf.fit(X_train, y_train)
+                st.json(clf.best_params_)
 
 
     with col4:
         st.subheader("Multilayer Perceptron")
-        activation = st.selectbox('Select activation function -', options=['identity', 'logistic', 'tanh', 'relu'],index=3)
-        solver = st.selectbox('Select solver -',('lbfgs', 'sgd', 'adam'), index=2)
+        parameters_mlp = {"activation":['identity', 'logistic', 'tanh', 'relu'], "solver":('lbfgs', 'sgd', 'adam'), "hidden_layer_sizes":[(100,),(50,50,),(100,100,)]}
+        activation = st.selectbox('Select activation function -', options=parameters_mlp["activation"],index=3)
+        solver = st.selectbox('Select solver -',parameters_mlp["solver"], index=2)
         hidden_layer_sizes = st.text_input("Select hidden layer sizes -", "100,")
         
         mlp = MLPClassifier(activation = activation, solver=solver, hidden_layer_sizes=literal_eval(hidden_layer_sizes))
-        c16, fig_mlp = get_plots(mlp, X_train, X_test, y_train, y_test)
+        c16, fig_mlp, precision_mlp, recall_mlp, f1_mlp, accuracy_mlp  = get_plots(mlp, X_train, X_test, y_train, y_test)
 
         if st.button('Evaluate MLP'):
             st.session_state.mlp += 1
@@ -543,15 +596,26 @@ with tab2:
         if st.session_state.mlp > 0:
             st.altair_chart(c16, use_container_width=True)
             st.pyplot(fig_mlp)
+            st.metric(label="Precision", value=precision_mlp)
+            st.metric(label="Recall", value=recall_mlp)
+            st.metric(label="F1-score", value=f1_mlp)
+            st.metric(label="Accuracy", value=accuracy_mlp)
+
+            if st.button('Tune MLP with CV'):
+                clf = GridSearchCV(mlp, parameters_mlp, cv=3)
+                clf.fit(X_train, y_train)
+                st.json(clf.best_params_)
+
 
     with col5:
         st.subheader("Random Forest")
-        criterion = st.selectbox('Select criterion for split -', options=['gini', 'entropy', 'log_loss'],index=0)
-        n_estimators = st.select_slider('Select number of estimators -', options=list(range(100,501,50)),value=100)
-        max_depth = st.select_slider('Select maximum depth -', options=list(range(1,11,1)),value=10)
+        parameters_rf = {"criterion":['gini', 'entropy', 'log_loss'], "n_estimators":list(range(100,501,100)), "max_depth": list(range(1,11,3))}
+        criterion = st.selectbox('Select criterion for split -', options=parameters_rf["criterion"],index=0)
+        n_estimators = st.select_slider('Select number of estimators -', options=parameters_rf["n_estimators"],value=100)
+        max_depth = st.select_slider('Select maximum depth -', options=parameters_rf["max_depth"],value=10)
         
         rf = RandomForestClassifier(criterion = criterion, n_estimators=n_estimators, max_depth=max_depth)
-        c17, fig_rf = get_plots(rf, X_train, X_test, y_train, y_test)
+        c17, fig_rf, precision_rf, recall_rf, f1_rf, accuracy_rf = get_plots(rf, X_train, X_test, y_train, y_test)
 
         if st.button('Evaluate RF'):
             st.session_state.rf += 1
@@ -559,4 +623,16 @@ with tab2:
         if st.session_state.rf > 0:
             st.altair_chart(c17, use_container_width=True)
             st.pyplot(fig_rf)
+            st.metric(label="Precision", value=precision_rf)
+            st.metric(label="Recall", value=recall_rf)
+            st.metric(label="F1-score", value=f1_rf)
+            st.metric(label="Accuracy", value=accuracy_rf)
 
+            if st.button('Tune RF with CV'):
+                clf = GridSearchCV(rf, parameters_rf, cv=3)
+                clf.fit(X_train, y_train)
+                st.json(clf.best_params_)
+
+
+    st.header("Cross-Validation Results")
+    
