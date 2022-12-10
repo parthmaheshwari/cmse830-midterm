@@ -454,8 +454,6 @@ with tab2:
     st.altair_chart(c12, use_container_width=True)
 
     
-    st.subheader("PCA -")
-
     st.header("Train Test Split")
     # Train Test split
     percent_test = st.slider('Set Train-Test ratio:', 0.00, 1.00, 0.30, step = 0.05)
