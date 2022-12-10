@@ -513,10 +513,10 @@ with tab2:
             st.session_state.lr_max_f1 = max(st.session_state.lr_max_f1, f1_lr)
             st.session_state.lr_max_accuracy = max(st.session_state.lr_max_accuracy, accuracy_lr)
 
-            if st.button('Tune LR with CV'):
-                clf = GridSearchCV(lr, parameters_lr, cv=3)
-                clf.fit(X_train, y_train)
-                st.json(clf.best_params_)
+        if st.button('Tune LR with CV'):
+            clf = GridSearchCV(lr, parameters_lr, cv=3)
+            clf.fit(X_train, y_train)
+            st.json(clf.best_params_)
 
 
     with col2:
@@ -540,10 +540,10 @@ with tab2:
             st.metric(label="F1-score", value=f1_svc)
             st.metric(label="Accuracy", value=accuracy_svc)
 
-            if st.button('Tune SVC with CV(Dont)'):
-                clf = GridSearchCV(svc, parameters_svc, cv=3)
-                clf.fit(X_train, y_train)
-                st.json(clf.best_params_)
+        if st.button('Tune SVC with CV(Dont)'):
+            clf = GridSearchCV(svc, parameters_svc, cv=3)
+            clf.fit(X_train, y_train)
+            st.json(clf.best_params_)
 
 
     with col3:
@@ -574,10 +574,10 @@ with tab2:
             st.session_state.knn_max_f1 = max(st.session_state.knn_max_f1, f1_knn)
             st.session_state.knn_max_accuracy = max(st.session_state.knn_max_accuracy, accuracy_knn)
 
-            if st.button('Tune KNN with CV'):
-                clf = GridSearchCV(knn, parameters_knn, cv=3)
-                clf.fit(X_train, y_train)
-                st.json(clf.best_params_)
+        if st.button('Tune KNN with CV'):
+            clf = GridSearchCV(knn, parameters_knn, cv=3)
+            clf.fit(X_train, y_train)
+            st.json(clf.best_params_)
 
 
     with col4:
@@ -601,10 +601,10 @@ with tab2:
             st.metric(label="F1-score", value=f1_mlp)
             st.metric(label="Accuracy", value=accuracy_mlp)
 
-            if st.button('Tune MLP with CV'):
-                clf = GridSearchCV(mlp, parameters_mlp, cv=3)
-                clf.fit(X_train, y_train)
-                st.json(clf.best_params_)
+        if st.button('Tune MLP with CV'):
+            clf = GridSearchCV(mlp, parameters_mlp, cv=3)
+            clf.fit(X_train, y_train)
+            st.json(clf.best_params_)
 
 
     with col5:
@@ -628,11 +628,9 @@ with tab2:
             st.metric(label="F1-score", value=f1_rf)
             st.metric(label="Accuracy", value=accuracy_rf)
 
-            if st.button('Tune RF with CV'):
-                clf = GridSearchCV(rf, parameters_rf, cv=3)
-                clf.fit(X_train, y_train)
-                st.json(clf.best_params_)
+        if st.button('Tune RF with CV'):
+            clf = GridSearchCV(rf, parameters_rf, cv=3)
+            clf.fit(X_train, y_train)
+            st.json(clf.best_params_)
 
-
-    st.header("Cross-Validation Results")
     
