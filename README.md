@@ -7,5 +7,5 @@ How different macroeconomic factors can help us predict systemic crises in diffe
 Project Link: https://parthmaheshwari-cmse830-midterm-global-crisis-indmrz.streamlitapp.com/
 
 2 sections - 
-- Understanding Crises (Midterm) - Interactive Visualization, EDA
-- Predicting Crises (Endterm) - Interactive Preprocessing, Feature Engineering, Training, Hyperparameter Tuning
+- Understanding Crises (Midterm) - Interactive Visualization, EDA (Altair, Plotly, Seaborn)
+- Predicting Crises (Endterm) - Interactive Preprocessing, Feature Engineering, Training, Hyperparameter Tuning (Sklearn, Imblearn)
